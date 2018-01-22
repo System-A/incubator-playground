@@ -65,9 +65,9 @@ class GatherContext<MD extends HasModelValues> {
   }
 }
 
-function gather<MD extends HasModelValues>(initial: () => MD, fn: (c: GatherContext<MD>) => void)
-function gather(fn: (c: GatherContext<{}>) => void)
-function gather<MD extends HasModelValues>(al: (() => MD) | ((c: GatherContext<MD>) => void), fn?: (c: GatherContext<MD>) => void)
+function gather<MD extends HasModelValues>(initial: () => MD, fn: (c: GatherContext<MD>) => void): any
+function gather(fn: (c: GatherContext<{}>) => void): any
+function gather<MD extends HasModelValues>(al: (() => MD) | ((c: GatherContext<MD>) => void), fn?: (c: GatherContext<MD>) => void): any
 {
   
 }
