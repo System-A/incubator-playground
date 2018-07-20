@@ -6,11 +6,11 @@
     "test-dev": "jest --forceExit --watch"
   },
   "dependencies": {
-    "typescript": "^2.6.2"
+    "typescript": "^2.9.2"
   },
   "devDependencies": {
-    "@types/jest": "^22.0.1",
-    "jest": "^22.1.4",
-    "ts-jest": "^22.0.1"
+    "@types/jest": "^23.3.0",
+    "jest": "^23.4.1",
+    "ts-jest": "^23.0.1"
   }
 }
