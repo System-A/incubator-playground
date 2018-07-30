@@ -9,8 +9,10 @@ interface IMyConfig extends TReferenceConfig {
 // 2. for every newly set value (or for the whole multimodel, if a new value is added to it), call all onceFor
 // 3. for all newly added values to multimodes, call all onceForEvery
 // 4. repeat 2. and 3. until no more work is to be done
-// TODO: how to detect changes
-// TODO: how to keep track of which rules does a value come from
+// NOTE: every runOnce() marks a boundary to 1 and 2 and 3
+//  - what if there are multiple adjacent runOnce() calls?
+//  - e.g. GitLab + TC + Kubernetes - these would then not run in parallel, which is bad
+//  - -> we might need concept of a "stage" to mark a boundary
 // TODO: how to detect cycles?
 
 extract()

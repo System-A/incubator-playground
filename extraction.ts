@@ -22,9 +22,26 @@ export class MultiModelValue<T> extends ModelValue<T[]> {
   }
 }
 
+class ModelValueObservedWrapper<T> extends ModelValue<T> {
+  private inner: ModelValue<T>
+  private observerFn: (v: T) => void
+
+  constructor(inner: ModelValue<T>, observerFn: (v: T) => void) {
+    super()
+    this.inner = inner
+    this.observerFn = observerFn
+  }
+
+  set(value: T) {
+    super.set(value)
+    this.observerFn(value)
+  }
+}
+
 type FactSetOrPromise<MD extends HasModelValues, TConfig> = Promise<FactSet<MD, TConfig>> | FactSet<MD, TConfig>
 
 class ExtractionContext<MD extends HasModelValues, TConfig extends TReferenceConfig> {
+  private onceFns: any
 
   refs: { [K in keyof TConfig]: TConfig[K] extends IReferenceFactory<infer TC, infer TReferenceSource>
     ? TReferenceSource
@@ -36,12 +53,15 @@ class ExtractionContext<MD extends HasModelValues, TConfig extends TReferenceCon
    * @param fn Fact-generating function.
    */
   once(name: string, fn: (components: Model<MD, TConfig>[]) => FactSetOrPromise<MD, TConfig>) {
-
+   this.onceFns.append({
+     name,
+     fn
+   })
   }
 
   /**
    * Run the given fact-generating function once, when a model property value is
-   * available for a component.
+   * updated for a component.
    * @param propertySelector Model property value selector.
    * @param ruleName Rule name.
    * @param componentRuleFn Fact-generating function. Receives the property value and component model as arguments.
@@ -74,10 +94,25 @@ export type TReferenceConfig = {
   [key: string]: IReferenceFactory<any, any>
 }
 
+interface IComponentChange {
+
+}
+
+interface IExtractionRuntime {
+  getComponents(): any[]
+  runRules(rules: { name: string, component: string?, fn: }[]): Promise<IComponentChange[]>
+}
+
+interface IExtraction {
+  config: object?,
+  customExtractionModelData: () => object,
+  run(runtime: IExtractionRuntime): Promise<void>
+}
+
 interface IExtractionBuilder<MD extends HasModelValues = {}, TConfig extends TReferenceConfig = {}> {
   withAdditionalExtractionModelData<AMD extends HasModelValues>(fn: () => AMD): IExtractionBuilder<AMD & MD, TConfig>
   withConfiguration<TAdditionalConfig extends TReferenceConfig>(c: TAdditionalConfig): IExtractionBuilder<MD, TConfig & TAdditionalConfig>
-  rules(fn: (ctx: ExtractionContext<MD, TConfig>) => void): void
+  rules(fn: (ctx: ExtractionContext<MD, TConfig>) => void): IExtraction
 }
 
 export function extract(): IExtractionBuilder {
