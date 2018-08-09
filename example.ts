@@ -9,10 +9,6 @@ interface IMyConfig extends TReferenceConfig {
 // 2. for every newly set value (or for the whole multimodel, if a new value is added to it), call all onceFor
 // 3. for all newly added values to multimodes, call all onceForEvery
 // 4. repeat 2. and 3. until no more work is to be done
-// NOTE: every runOnce() marks a boundary to 1 and 2 and 3
-//  - what if there are multiple adjacent runOnce() calls?
-//  - e.g. GitLab + TC + Kubernetes - these would then not run in parallel, which is bad
-//  - -> we might need concept of a "stage" to mark a boundary
 // TODO: how to detect cycles?
 
 extract()
@@ -37,18 +33,18 @@ extract()
       return apps.map(a => c.createComponent(a.id, m => m.deployment.add(a.deployment())))
     })
 
-    c.onceFor(m => m.gitLabProject, "Basic info from GitLab", (gp, cmp) => c.component(cmp.id,
+    c.for(m => m.gitLabProject, "Basic info from GitLab", (gp, cmp) => c.component(cmp.id,
       m => m.team.set(gp.path[0]),
       m => m.description.set(gp.description),
     ))
 
-    c.onceFor(m => m.sourceCode, "README from source code", (sc, cmp) =>
+    c.for(m => m.sourceCode, "README from source code", (sc, cmp) =>
       sc.getText("/README.md").then(contents => contents
         ? c.component(cmp.id, m => m.readme.set(contents))
         : [])
     )
 
-    c.onceFor(m => m.readme, "Grafana links from README.md", (md, cmp) =>
+    c.for(m => m.readme, "Grafana links from README.md", (md, cmp) =>
       c.component(cmp.id, m => m.links.add({ title: "Grafana", value: "http://aa.txt" }))
     )
   })

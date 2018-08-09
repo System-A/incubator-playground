@@ -66,7 +66,7 @@ class ExtractionContext<MD extends HasModelValues, TConfig extends TReferenceCon
    * @param ruleName Rule name.
    * @param componentRuleFn Fact-generating function. Receives the property value and component model as arguments.
    */
-  onceFor<T>(propertySelector: (model: Model<MD, TConfig>) => ModelValue<T>, ruleName: string, componentRuleFn: (propertyValue: T, model: Model<MD, TConfig>) => FactSetOrPromise<MD, TConfig>) {
+  for<T>(propertySelector: (model: Model<MD, TConfig>) => ModelValue<T>, ruleName: string, componentRuleFn: (propertyValue: T, model: Model<MD, TConfig>) => FactSetOrPromise<MD, TConfig>) {
     throw new Error()
   }
 
@@ -77,7 +77,7 @@ class ExtractionContext<MD extends HasModelValues, TConfig extends TReferenceCon
    * @param ruleName Rule name.
    * @param componentRuleFn Fact-generating function. Receives the new property value and component model as arguments.
    */
-  onceForEvery<T>(propertySelector: (model: Model<MD, TConfig>) => MultiModelValue<T>, ruleName: string, componentRuleFn: (propertyValue: T, model: Model<MD, TConfig>) => FactSetOrPromise<MD, TConfig>) {
+  forEvery<T>(propertySelector: (model: Model<MD, TConfig>) => MultiModelValue<T>, ruleName: string, componentRuleFn: (propertyValue: T, model: Model<MD, TConfig>) => FactSetOrPromise<MD, TConfig>) {
     throw new Error()
   }
 
@@ -100,7 +100,7 @@ interface IComponentChange {
 
 interface IExtractionRuntime {
   getComponents(): any[]
-  runRules(rules: { name: string, component: string?, fn: }[]): Promise<IComponentChange[]>
+  runRules(rules: { name: string, component: string?, fn:  }[]): Promise<IComponentChange[]>
 }
 
 interface IExtraction {
