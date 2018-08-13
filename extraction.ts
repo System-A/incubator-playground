@@ -40,8 +40,27 @@ class ModelValueObservedWrapper<T> extends ModelValue<T> {
 
 type FactSetOrPromise<MD extends HasModelValues, TConfig> = Promise<FactSet<MD, TConfig>> | FactSet<MD, TConfig>
 
+interface OnceFn<MD extends HasModelValues, TConfig> {
+  name: string,
+  fn: (components: Model<MD, TConfig>[]) => FactSetOrPromise<MD, TConfig>
+}
+
+interface PropertyFn<T, MD extends HasModelValues, TConfig> {
+  propertySelector: (model: Model<MD, TConfig>) => ModelValue<T>,
+  ruleName: string,
+  componentRuleFn: (propertyValue: T, model: Model<MD, TConfig>) => FactSetOrPromise<MD, TConfig>
+}
+
+interface MultiPropertyFn<T, MD extends HasModelValues, TConfig> {
+  propertySelector: (model: Model<MD, TConfig>) => MultiModelValue<T>,
+  ruleName: string,
+  componentRuleFn: (propertyValue: T, model: Model<MD, TConfig>) => FactSetOrPromise<MD, TConfig>
+}
+
 class ExtractionContext<MD extends HasModelValues, TConfig extends TReferenceConfig> {
-  private onceFns: any
+  private onceFns: OnceFn<MD, TConfig>[] = []
+  private forFns: PropertyFn<any, MD, TConfig>[] = []
+  private forEveryFn: MultiPropertyFn<any, MD, TConfig>[] = []
 
   refs: { [K in keyof TConfig]: TConfig[K] extends IReferenceFactory<infer TC, infer TReferenceSource>
     ? TReferenceSource
@@ -53,10 +72,7 @@ class ExtractionContext<MD extends HasModelValues, TConfig extends TReferenceCon
    * @param fn Fact-generating function.
    */
   once(name: string, fn: (components: Model<MD, TConfig>[]) => FactSetOrPromise<MD, TConfig>) {
-   this.onceFns.append({
-     name,
-     fn
-   })
+    this.onceFns.push({ name, fn })
   }
 
   /**
@@ -67,7 +83,7 @@ class ExtractionContext<MD extends HasModelValues, TConfig extends TReferenceCon
    * @param componentRuleFn Fact-generating function. Receives the property value and component model as arguments.
    */
   for<T>(propertySelector: (model: Model<MD, TConfig>) => ModelValue<T>, ruleName: string, componentRuleFn: (propertyValue: T, model: Model<MD, TConfig>) => FactSetOrPromise<MD, TConfig>) {
-    throw new Error()
+    this.forFns.push({propertySelector, ruleName, componentRuleFn})
   }
 
   /**
@@ -78,7 +94,7 @@ class ExtractionContext<MD extends HasModelValues, TConfig extends TReferenceCon
    * @param componentRuleFn Fact-generating function. Receives the new property value and component model as arguments.
    */
   forEvery<T>(propertySelector: (model: Model<MD, TConfig>) => MultiModelValue<T>, ruleName: string, componentRuleFn: (propertyValue: T, model: Model<MD, TConfig>) => FactSetOrPromise<MD, TConfig>) {
-    throw new Error()
+    this.forEveryFn.push({propertySelector, ruleName, componentRuleFn})
   }
 
   component(componentId: string, ...modelFns: IModelActionFn<MD, TConfig>[]): Fact<MD, TConfig>[] {
@@ -117,6 +133,36 @@ interface IExtractionBuilder<MD extends HasModelValues = {}, TConfig extends TRe
 
 export function extract(): IExtractionBuilder {
   return {} as IExtractionBuilder
+}
+
+class ExtractionBuilder<MD extends HasModelValues = {}, TConfig extends  TReferenceConfig = {}> implements IExtractionBuilder<MD, TConfig> {
+  private additionalExtractionModelData: () => MD
+  private config: TConfig
+
+  constructor(additionalExtractionModelData: () => MD, config: TConfig) {
+    this.additionalExtractionModelData = additionalExtractionModelData
+    this.config = config
+  }
+
+  withAdditionalExtractionModelData<AMD extends HasModelValues>(fn: () => AMD): IExtractionBuilder<AMD & MD, TConfig> {
+    const combinedFn = () => {
+      return {
+        ...this.additionalExtractionModelData() as object,
+        ...fn() as object
+      } as any as AMD & MD
+    }
+    return new ExtractionBuilder(combinedFn, this.config)
+  }
+
+  withConfiguration<TAdditionalConfig extends TReferenceConfig>(c: TAdditionalConfig): IExtractionBuilder<MD, TConfig & TAdditionalConfig> {
+    const combinedConfig = {...this.config as object, c} as any as TConfig & TAdditionalConfig
+    return new ExtractionBuilder(this.additionalExtractionModelData, combinedConfig)
+  }
+
+  rules(fn: (ctx: ExtractionContext<MD, TConfig>) => void): IExtraction {
+    const context = new ExtractionContext<MD, TConfig>()
+    fn(context)
+  }
 }
 
 export interface IReferenceFactory<TConfig, TReferenceSource> {
